@@ -21,21 +21,12 @@ registerResources(server, contentReader);
 
 // Start server
 async function main() {
-    try {
-        console.log("Starting OSP Marketing Tools MCP server...");
-        const transport = new StdioServerTransport();
-        await server.connect(transport);
-    } catch (error) {
-        console.error("Error starting server:", error);
-        process.exit(1);
-    }
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
 }
 
 // Call main if file is executed directly
 main()
-    .then(() => {
-        console.log("OSP Marketing Tools MCP server started.");
-    })
     .catch((error) => {
         console.error("Error starting server:", error);
         process.exit(1);
