@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSP Marketing Tools - SSE Client Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .content-area {
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #eee;
+            border-radius: 5px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-family: monospace;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f7f7f7;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .code-block {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin-bottom: 20px;
+        }
+        .log-area {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.connected {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .status.disconnected {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+<body>
+    <h1>OSP Marketing Tools - SSE Client Example</h1>
+    
+    <div id="status" class="status disconnected">
+        Disconnected
+    </div>
+
+    <div class="control-panel">
+        <button id="connect-btn">Connect to Server</button>
+        <button id="disconnect-btn" disabled>Disconnect</button>
+    </div>
+
+    <div class="content-area">
+        <h2>1. OSP Editing Codes Tool</h2>
+        <p>This tool provides semantic editing marks for content review with a teaching/learning focus.</p>
+        <button id="get-editing-codes">Get Editing Codes</button>
+        <div class="code-block">
+            <h3>Example Content to Review:</h3>
+            <textarea id="content-to-review">Kubernetes is a container orchestration platform. It handles deploying applications and scaling them as needed. There's lots of things it can do. It's really good. You should use it for your applications to make them more resilient.</textarea>
+            <button id="review-content">Review Content</button>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <h2>2. OSP Meta Information Generator</h2>
+        <p>Generate optimized metadata for web content with proper keyword placement.</p>
+        <div class="code-block">
+            <input type="text" id="meta-topic" placeholder="Topic" value="containerization best practices" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+            <input type="text" id="meta-keyword" placeholder="Primary keyword" value="Docker containers" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+            <input type="text" id="meta-audience" placeholder="Target audience" value="system administrators" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+            <input type="text" id="meta-type" placeholder="Content type" value="technical guide" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+            <button id="generate-meta">Generate Metadata</button>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <h2>Response:</h2>
+        <pre id="response">Connect to the server and use one of the tools above to see results here.</pre>
+    </div>
+
+    <div class="log-area" id="log-area">
+        <div>Console logs will appear here...</div>
+    </div>
+
+    <script>
+        let source = null;
+        let sessionId = null;
+        const baseUrl = 'http://localhost:3000';
+        const logArea = document.getElementById('log-area');
+        const statusDisplay = document.getElementById('status');
+        const responseDisplay = document.getElementById('response');
+
+        // Logging function
+        function log(message) {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logArea.appendChild(logEntry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // Connect to SSE endpoint
+        document.getElementById('connect-btn').addEventListener('click', async () => {
+            try {
+                log('Connecting to SSE endpoint...');
+                source = new EventSource(`${baseUrl}/sse`);
+                
+                source.onopen = () => {
+                    log('Connected to SSE endpoint');
+                    statusDisplay.className = 'status connected';
+                    statusDisplay.textContent = 'Connected';
+                    document.getElementById('connect-btn').disabled = true;
+                    document.getElementById('disconnect-btn').disabled = false;
+                };
+
+                source.addEventListener('sessionId', (event) => {
+                    sessionId = JSON.parse(event.data).sessionId;
+                    log(`Session ID received: ${sessionId}`);
+                });
+
+                source.addEventListener('toolResponse', (event) => {
+                    const data = JSON.parse(event.data);
+                    log(`Tool response received: ${data.id}`);
+                    handleToolResponse(data);
+                });
+
+                source.addEventListener('promptResponse', (event) => {
+                    const data = JSON.parse(event.data);
+                    log(`Prompt response received: ${data.id}`);
+                    handlePromptResponse(data);
+                });
+
+                source.onerror = (error) => {
+                    log('Error with SSE connection: ' + JSON.stringify(error));
+                };
+            } catch (error) {
+                log('Failed to connect: ' + error.message);
+            }
+        });
+
+        // Disconnect from SSE endpoint
+        document.getElementById('disconnect-btn').addEventListener('click', () => {
+            if (source) {
+                source.close();
+                source = null;
+                sessionId = null;
+                statusDisplay.className = 'status disconnected';
+                statusDisplay.textContent = 'Disconnected';
+                document.getElementById('connect-btn').disabled = false;
+                document.getElementById('disconnect-btn').disabled = true;
+                log('Disconnected from SSE endpoint');
+            }
+        });
+
+        // Get Editing Codes Tool
+        document.getElementById('get-editing-codes').addEventListener('click', async () => {
+            if (!sessionId) {
+                log('Not connected. Please connect first.');
+                return;
+            }
+
+            try {
+                log('Calling get_editing_codes tool...');
+                const response = await fetch(`${baseUrl}/messages?sessionId=${sessionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: Date.now().toString(),
+                        method: 'tools/call',
+                        params: {
+                            name: 'get_editing_codes',
+                            arguments: {}
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                log(`Request sent with ID: ${result.id}`);
+            } catch (error) {
+                log('Error calling tool: ' + error.message);
+            }
+        });
+
+        // Review Content Tool (using prompt)
+        document.getElementById('review-content').addEventListener('click', async () => {
+            if (!sessionId) {
+                log('Not connected. Please connect first.');
+                return;
+            }
+
+            const content = document.getElementById('content-to-review').value;
+            if (!content.trim()) {
+                log('Please enter some content to review.');
+                return;
+            }
+
+            try {
+                log('Calling edit-content prompt...');
+                const response = await fetch(`${baseUrl}/messages?sessionId=${sessionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: Date.now().toString(),
+                        method: 'prompts/run',
+                        params: {
+                            name: 'edit-content',
+                            arguments: {
+                                content: content
+                            }
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                log(`Request sent with ID: ${result.id}`);
+            } catch (error) {
+                log('Error calling prompt: ' + error.message);
+            }
+        });
+
+        // Generate Meta Information
+        document.getElementById('generate-meta').addEventListener('click', async () => {
+            if (!sessionId) {
+                log('Not connected. Please connect first.');
+                return;
+            }
+
+            const topic = document.getElementById('meta-topic').value;
+            const keyword = document.getElementById('meta-keyword').value;
+            const audience = document.getElementById('meta-audience').value;
+            const contentType = document.getElementById('meta-type').value;
+
+            if (!topic.trim()) {
+                log('Please enter a topic.');
+                return;
+            }
+
+            try {
+                log('Calling generate-meta prompt...');
+                const response = await fetch(`${baseUrl}/messages?sessionId=${sessionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: Date.now().toString(),
+                        method: 'prompts/run',
+                        params: {
+                            name: 'generate-meta',
+                            arguments: {
+                                topic: topic,
+                                keyword: keyword,
+                                audience: audience,
+                                contentType: contentType
+                            }
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                log(`Request sent with ID: ${result.id}`);
+            } catch (error) {
+                log('Error calling prompt: ' + error.message);
+            }
+        });
+
+        // Handle tool response
+        function handleToolResponse(data) {
+            try {
+                const result = data.result;
+                if (result && result.content && result.content.length > 0) {
+                    const text = result.content[0].text;
+                    const parsedData = JSON.parse(text);
+                    
+                    if (parsedData.success) {
+                        const content = parsedData.data.content;
+                        // First 500 characters for preview
+                        const preview = content.substring(0, 500) + '...';
+                        responseDisplay.textContent = preview;
+                        log('Tool response received and displayed (truncated for preview)');
+                    } else {
+                        responseDisplay.textContent = `Error: ${parsedData.error}`;
+                        log('Error in tool response: ' + parsedData.error);
+                    }
+                } else {
+                    responseDisplay.textContent = 'Invalid response format';
+                    log('Invalid response format');
+                }
+            } catch (error) {
+                responseDisplay.textContent = `Error processing response: ${error.message}`;
+                log('Error processing response: ' + error.message);
+            }
+        }
+
+        // Handle prompt response
+        function handlePromptResponse(data) {
+            try {
+                const result = data.result;
+                if (result && result.messages && result.messages.length > 0) {
+                    const message = result.messages[0];
+                    if (message.content && message.content.type === 'text') {
+                        responseDisplay.textContent = message.content.text;
+                        log('Prompt response received and displayed');
+                    } else {
+                        responseDisplay.textContent = 'Invalid message content format';
+                        log('Invalid message content format');
+                    }
+                } else {
+                    responseDisplay.textContent = 'Invalid response format';
+                    log('Invalid response format');
+                }
+            } catch (error) {
+                responseDisplay.textContent = `Error processing response: ${error.message}`;
+                log('Error processing response: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
