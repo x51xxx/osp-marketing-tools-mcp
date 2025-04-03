@@ -1,12 +1,15 @@
 {
-  "name": "osp-marketing-tools-mcp",
-  "version": "0.1.0",
+  "name": "@trishchuk/osp-marketing-tools-mcp",
+  "version": "0.1.2",
   "description": "OSP Marketing Tools using Model Context Protocol",
   "type": "module",
   "main": "dist/index.js",
   "author": {
     "email": "x51xxx@gmail.com",
     "name": "Taras Trishchuk"
+  },
+  "bin": {
+    "osp-marketing-tools-mcp": "dist/index.js"
   },
   "license": "CC-BY-SA-4.0",
   "scripts": {

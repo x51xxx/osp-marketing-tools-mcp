@@ -92,6 +92,30 @@ Comprehensive system for optimizing web content for search engines and user expe
 
 ### Setup
 
+You can install and use this package in two ways:
+
+#### Setup via npm (recommended)
+
+1. Install the package globally:
+
+Add to your Claude Desktop configuration file (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "ai_think_gate": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@trishchuk/osp-marketing-tools-mcp"
+      ]
+    }
+  }
+}
+```
+
+#### Setup from source codes
+
 ```bash
 # Clone the repository
 git clone https://github.com/x51xxx/osp-marketing-tools-mcp.git
@@ -104,7 +128,6 @@ npm install
 npm run build
 ```
 
-### Configuration for Claude Desktop
 
 Add to your Claude Desktop configuration file (`claude_desktop_config.json`):
 
@@ -131,22 +154,6 @@ Note for Windows users: Make sure to replace `path/to/osp-marketing-tools-mcp` w
 
 Also, remember to use double backslashes `\\` instead of single backslashes `\` in the path.
 
-### Configuration for Cursor
-
-Add to your Cursor configuration:
-
-```json
-{
-  "mcpServers": {
-    "osp_marketing_tools": {
-      "command": "node",
-      "args": [
-        "path/to/osp-marketing-tools-mcp/dist/index.js"
-      ]
-    }
-  }
-}
-```
 
 ## Usage
 
